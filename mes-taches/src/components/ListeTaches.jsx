@@ -1,7 +1,7 @@
 import React from "react";
 import Tache from "./Tache.jsx";
 
-function ListeTaches({ taches, onBasculer, onSupprimer }) {
+function ListeTaches({ taches, onBasculer, onSupprimer, onModifier }) {
   if (taches.length === 0) {
     return <p className="aucune-tache">Aucune tâche à afficher</p>;
   }
@@ -15,6 +15,7 @@ function ListeTaches({ taches, onBasculer, onSupprimer }) {
           terminee={tache.terminee}
           onBasculer={onBasculer}
           onSupprimer={onSupprimer}
+          onModifier={onModifier}
         />
       ))}
     </ul>
