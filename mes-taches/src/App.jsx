@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Entete from "./components/Entete.jsx";
 import ListeTaches from "./components/ListeTaches.jsx";
 import Pied from "./components/Pied.jsx";
@@ -8,17 +8,44 @@ import Compteur from "./components/Compteur.jsx";
 import FormulaireAjout from "./components/FormulaireAjout.jsx";
 import Filtres from "./components/Filtres.jsx";
 import Statistiques from "./components/Statistiques.jsx";
-
-const TACHES_INITIALES = [
-  { id: 1, titre: "Installer Node.js et Vite", terminee: true },
-  { id: 2, titre: "Comprendre les composants", terminee: true },
-  { id: 3, titre: "Passer des données avec les props", terminee: false },
-  { id: 4, titre: "Gérer l'état avec useState", terminee: false },
-];
+import Horloge from "./components/Horloge.jsx";
 
 function App() {
-  const [taches, setTaches] = useState(TACHES_INITIALES);
+  const [taches, setTaches] = useState([]);
+  const [chargement, setChargement] = useState(true);
+  const [erreur, setErreur] = useState(null);
   const [filtre, setFiltre] = useState("toutes");
+
+  //  Chargement des tâches depuis JSON
+  useEffect(() => {
+    let annule = false;
+
+    fetch("/taches.json")
+      .then((reponse) => {
+        if (!reponse.ok) throw new Error(`Erreur HTTP ${reponse.status}`);
+        return reponse.json();
+      })
+      .then((donnees) => {
+        if (!annule) setTaches(donnees);
+      })
+      .catch((err) => {
+        if (!annule) setErreur(err.message);
+      })
+      .finally(() => {
+        if (!annule) setChargement(false);
+      });
+
+    return () => {
+      annule = true;
+    };
+  }, []);
+
+  // Calcul du nombre de tâches restantes
+  const nombreRestantes = taches.filter((t) => !t.terminee).length;
+
+  useEffect(() => {
+    document.title = `(${nombreRestantes}) Mes tâches`;
+  }, [nombreRestantes]);
 
   function ajouterTache(titre) {
     const nouvelleTache = {
@@ -44,7 +71,7 @@ function App() {
   const tachesVisibles = taches.filter((tache) => {
     if (filtre === "actives") return !tache.terminee;
     if (filtre === "terminees") return tache.terminee;
-    return true; // 'toutes'
+    return true;
   });
 
   return (
@@ -53,7 +80,12 @@ function App() {
         titre="Gestionnaire de Tâches"
         sousTitre="Mon premier projet React avec props"
       />
+
       <main>
+        <Carte titre="Heure actuelle">
+          <Horloge />
+        </Carte>
+
         <Carte titre="Compteur">
           <Compteur />
         </Carte>
@@ -67,13 +99,19 @@ function App() {
         </Carte>
 
         <Carte titre="Ma liste">
-          <h2>Ma liste</h2>
-          <Filtres filtre={filtre} onChanger={setFiltre} />
-          <ListeTaches
-            taches={tachesVisibles}
-            onBasculer={basculerTache}
-            onSupprimer={supprimerTache}
-          />
+          {chargement && <p className="vide">Chargement des tâches…</p>}
+          {erreur && <p className="erreur">{erreur}</p>}
+          {!chargement && !erreur && (
+            <>
+              <h2>Ma liste</h2>
+              <Filtres filtre={filtre} onChanger={setFiltre} />
+              <ListeTaches
+                taches={tachesVisibles}
+                onBasculer={basculerTache}
+                onSupprimer={supprimerTache}
+              />
+            </>
+          )}
         </Carte>
       </main>
       <Pied auteur="Kalid EL HAMIDI" />

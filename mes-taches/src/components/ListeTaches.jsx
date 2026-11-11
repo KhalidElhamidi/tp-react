@@ -10,6 +10,7 @@ function ListeTaches({ taches, onBasculer, onSupprimer }) {
       {taches.map((tache) => (
         <Tache
           key={tache.id}
+          id={tache.id}
           titre={tache.titre}
           terminee={tache.terminee}
           onBasculer={onBasculer}
