@@ -1,8 +1,8 @@
-function Entete() {
+function Entete(props) {
   return (
     <header className="entete">
-      <h1>Mes tâches</h1>
-      <p>Mon premier projet React</p>
+      <h1>{props.titre}</h1>
+      <p>{props.sousTitre}</p>
     </header>
   );
 }

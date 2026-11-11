@@ -1,17 +1,12 @@
-import React from 'react';
+import React from "react";
+import Tache from "./Tache.jsx";
 
-function ListeTaches() {
+function ListeTaches({ taches }) {
   return (
     <ul className="liste-taches">
-      <li className="tache">
-        <span className="titre">Comprendre les composants</span>
-      </li>
-      <li className="tache terminee">
-        <span className="titre">Apprendre le JSX</span>
-      </li>
-      <li className="tache">
-        <span className="titre">Gérer les states</span>
-      </li>
+      {taches.map((tache) => (
+        <Tache key={tache.id} titre={tache.titre} terminee={tache.terminee} />
+      ))}
     </ul>
   );
 }
