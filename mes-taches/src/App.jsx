@@ -3,7 +3,6 @@ import Entete from "./components/Entete.jsx";
 import ListeTaches from "./components/ListeTaches.jsx";
 import Pied from "./components/Pied.jsx";
 import Carte from "./components/Carte.jsx";
-import Tache from "./components/Tache.jsx";
 import Compteur from "./components/Compteur.jsx";
 import FormulaireAjout from "./components/FormulaireAjout.jsx";
 import Filtres from "./components/Filtres.jsx";
@@ -11,13 +10,22 @@ import Statistiques from "./components/Statistiques.jsx";
 import Horloge from "./components/Horloge.jsx";
 
 function App() {
-  const [taches, setTaches] = useState([]);
-  const [chargement, setChargement] = useState(true);
+  const [taches, setTaches] = useState(() => {
+    const sauvegarde = localStorage.getItem("taches_react");
+    return sauvegarde ? JSON.parse(sauvegarde) : [];
+  });
+  const [chargement, setChargement] = useState(() => {
+    return !localStorage.getItem("taches_react");
+  });
   const [erreur, setErreur] = useState(null);
   const [filtre, setFiltre] = useState("toutes");
 
+  const [afficherHorloge, setAfficherHorloge] = useState(true);
+
   //  Chargement des tâches depuis JSON
   useEffect(() => {
+    if (localStorage.getItem("taches_react")) return;
+
     let annule = false;
 
     fetch("/taches.json")
@@ -26,7 +34,10 @@ function App() {
         return reponse.json();
       })
       .then((donnees) => {
-        if (!annule) setTaches(donnees);
+        if (!annule) {
+          setTaches(donnees);
+          localStorage.setItem("taches_react", JSON.stringify(donnees));
+        }
       })
       .catch((err) => {
         if (!annule) setErreur(err.message);
@@ -39,6 +50,10 @@ function App() {
       annule = true;
     };
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem("taches_react", JSON.stringify(taches));
+  }, [taches]);
 
   // Calcul du nombre de tâches restantes
   const nombreRestantes = taches.filter((t) => !t.terminee).length;
@@ -68,6 +83,20 @@ function App() {
     setTaches(taches.filter((tache) => tache.id !== id));
   }
 
+  function modifierTache(id, nouveauTitre) {
+    setTaches(
+      taches.map((tache) =>
+        tache.id === id ? { ...tache, titre: nouveauTitre } : tache,
+      ),
+    );
+  }
+
+  function supprimerTerminees() {
+    setTaches(taches.filter((tache) => !tache.terminee));
+  }
+
+  const nbTerminees = taches.filter((tache) => tache.terminee).length;
+
   const tachesVisibles = taches.filter((tache) => {
     if (filtre === "actives") return !tache.terminee;
     if (filtre === "terminees") return tache.terminee;
@@ -83,7 +112,13 @@ function App() {
 
       <main>
         <Carte titre="Heure actuelle">
-          <Horloge />
+          <button
+            onClick={() => setAfficherHorloge(!afficherHorloge)}
+            style={{ marginBottom: "10px" }}
+          >
+            {afficherHorloge ? "Masquer l'horloge" : "Afficher l'horloge"}
+          </button>
+          {afficherHorloge && <Horloge />}
         </Carte>
 
         <Carte titre="Compteur">
@@ -103,12 +138,29 @@ function App() {
           {erreur && <p className="erreur">{erreur}</p>}
           {!chargement && !erreur && (
             <>
-              <h2>Ma liste</h2>
-              <Filtres filtre={filtre} onChanger={setFiltre} />
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <Filtres filtre={filtre} onChanger={setFiltre} />
+
+                <button
+                  className="danger"
+                  onClick={supprimerTerminees}
+                  disabled={nbTerminees === 0}
+                >
+                  Supprimer les terminées ({nbTerminees})
+                </button>
+              </div>
+
               <ListeTaches
                 taches={tachesVisibles}
                 onBasculer={basculerTache}
                 onSupprimer={supprimerTache}
+                onModifier={modifierTache}
               />
             </>
           )}
